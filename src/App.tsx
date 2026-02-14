@@ -14,7 +14,7 @@ type ParsedRow = Entry & {
 
 const NBRB_API = 'https://api.nbrb.by/exrates/rates/USD?parammode=2'
 
-function parseLines(text: string): Entry[] {
+function parseLines(text: string): ParsedRow[] {
   return text
     .split(/\r?\n/)
     .map((line) => line.trim())
@@ -22,11 +22,28 @@ function parseLines(text: string): Entry[] {
     .map((line) => {
       const parts = line.split(/[;,\s]+/).filter(Boolean)
       const [dateRaw, amountRaw] = parts
-      const date = dateRaw ?? ''
+      const date = normalizeDate(dateRaw ?? '')
       const amount = parseFloat((amountRaw ?? '').replace(',', '.'))
+
+      if (!date) {
+        return { date: dateRaw ?? '', amount, error: 'Некорректная дата' }
+      }
+      if (!Number.isFinite(amount)) {
+        return { date, amount, error: 'Некорректная сумма' }
+      }
       return { date, amount }
     })
-    .filter(({ date, amount }) => date && Number.isFinite(amount))
+}
+
+function normalizeDate(input: string): string {
+  // supports YYYY-MM-DD and DD.MM.YYYY → returns YYYY-MM-DD
+  if (/^\d{4}-\d{2}-\d{2}$/.test(input)) return input
+  const m = input.match(/^(\d{2})\.(\d{2})\.(\d{4})$/)
+  if (m) {
+    const [, dd, mm, yyyy] = m
+    return `${yyyy}-${mm}-${dd}`
+  }
+  return ''
 }
 
 async function fetchRate(date: string): Promise<number> {
@@ -63,7 +80,7 @@ function App() {
 
     setLoading(true)
     try {
-      const dates = Array.from(new Set(entries.map((e) => e.date)))
+      const dates = Array.from(new Set(entries.filter((e) => !e.error && e.date).map((e) => e.date)))
       const rateMap = new Map<string, number>()
 
       await Promise.all(
@@ -78,6 +95,7 @@ function App() {
       )
 
       const withRates: ParsedRow[] = entries.map((e) => {
+        if (e.error) return e
         const rate = rateMap.get(e.date)
         if (!rate || Number.isNaN(rate)) {
           return { ...e, error: 'Нет курса для даты' }
@@ -161,7 +179,7 @@ function App() {
           {rows.map((row, idx) => (
             <div className="table-row" role="row" key={`${row.date}-${idx}`}>
               <div role="cell">{row.date}</div>
-              <div role="cell">{row.amount.toFixed(2)}</div>
+              <div role="cell">{Number.isFinite(row.amount) ? row.amount.toFixed(2) : '—'}</div>
               <div role="cell">{row.usdRate ? row.usdRate.toFixed(4) : '—'}</div>
               <div role="cell">{row.usdAmount ? row.usdAmount.toFixed(2) : '—'}</div>
               <div role="cell" className={row.error ? 'status error' : 'status ok'}>
