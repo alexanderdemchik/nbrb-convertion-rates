@@ -1,7 +1,7 @@
 .app {
   max-width: 1080px;
   margin: 0 auto;
-  padding: 32px 20px 64px;
+  padding: 24px 16px 48px;
   color: #0f172a;
   font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
 }
@@ -199,6 +199,26 @@ small {
 }
 
 @media (max-width: 720px) {
+  .app {
+    padding: 20px 14px 40px;
+  }
+
+  header {
+    margin-bottom: 20px;
+  }
+
+  .controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .controls button,
+  .file-label {
+    width: 100%;
+    justify-content: center;
+    text-align: center;
+  }
+
   .table-head, .table-row {
     grid-template-columns: repeat(2, 1fr);
     grid-template-areas:
