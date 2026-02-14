@@ -1,4 +1,4 @@
-import { ChangeEvent, useMemo, useState } from 'react'
+import { type ChangeEvent, useMemo, useState } from 'react'
 import './App.css'
 
 type Entry = {
@@ -71,7 +71,7 @@ function App() {
           try {
             const rate = await fetchRate(date)
             rateMap.set(date, rate)
-          } catch (err) {
+          } catch {
             rateMap.set(date, NaN)
           }
         })
@@ -87,7 +87,7 @@ function App() {
       })
 
       setRows(withRates)
-    } catch (err) {
+    } catch {
       setError('Не удалось получить курсы НБРБ')
     } finally {
       setLoading(false)
